@@ -1,5 +1,8 @@
 Revision history for Perl extension Algorithm::LCS.
 
+1.01  Sun Aug 10 10:11:00 EDT 2003
+        - fix offset bug in LCS()
+
 1.00  Sat Aug 9 17:32:28 EDT 2003
         - roll CPAN release
 

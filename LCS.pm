@@ -3,7 +3,7 @@ package Algorithm::LCS;
 use 5.008;
 use strict;
 use warnings;
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 require XSLoader;
 XSLoader::load('Algorithm::LCS', $VERSION);
@@ -37,13 +37,18 @@ sub LCS {
         $bmax--;
     }
 
-    my $h = $ctx->line_map(@$b[$bmin..$bmax]);
+    my $h = $ctx->line_map(@$b[$bmin..$bmax]); # line numbers are off by $bmin
 
     return $amin + _core_loop($ctx, $a, $amin, $amax, $h) + ($#$a - $amax)
         unless wantarray;
 
+    my @lcs = _core_loop($ctx,$a,$amin,$amax,$h);
+    if ($bmin > 0) {
+        $_->[1] += $bmin for @lcs; # correct line numbers
+    }
+
     map([$_ => $_], 0 .. ($amin-1)),
-        _core_loop($ctx, $a, $amin, $amax, $h),
+        @lcs,
             map([$_ => ++$bmax], ($amax+1) .. $#$a);
 }
 
