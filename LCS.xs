@@ -206,4 +206,4 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
             }
         }
         else if (GIMME_V == G_SCALAR)
-            XS_RETURN_IV(0);
+            XSRETURN_IV(0);

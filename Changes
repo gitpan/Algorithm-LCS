@@ -1,5 +1,8 @@
 Revision history for Perl extension Algorithm::LCS.
 
+1.02  Sun Aug 10 10:45:00 EDT 2003
+        - fix typo in LCS.xs: s/XS_RETURN_IV/XSRETURN_IV/
+
 1.01  Sun Aug 10 10:11:00 EDT 2003
         - fix offset bug in LCS()
 

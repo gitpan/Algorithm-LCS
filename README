@@ -1,4 +1,4 @@
-Algorithm/LCS version 1.01
+Algorithm/LCS version 1.02
 ==========================
 
 Algorithm::LCS reimplements Algorithm::Diff's core loop in XS,
