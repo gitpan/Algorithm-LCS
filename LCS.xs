@@ -77,8 +77,8 @@ static struct LK *make_link(struct CTX *ctx, struct LK *lk, IV i, IV j)
         ctx->current = new->next;
         return new;
     }
-    ctx->current = malloc(100 * sizeof *ctx->current);
-    PREP_LINKS(ctx->current, 100);
+    ctx->current = malloc(ctx->avail.alloc * sizeof *ctx->current);
+    PREP_LINKS(ctx->current, ctx->avail.alloc);
     *la_push(&ctx->avail) = ctx->current;
     new->next = ctx->current;
     return new;
@@ -172,11 +172,9 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
 
     PREINIT:
         struct CTX *ctx = (struct CTX *)SvIVX(SvRV(obj));
-        IV i, j, max_line, min_line;
+        IV i, j;
 
     PPCODE:
-        min_line = -1;
-        max_line = 0;
         ctx->links.max = ctx->thresh.max = -1;
         ctx->current = *ctx->avail.arr;
 
@@ -189,10 +187,6 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
             if (lines != NULL) {
                 register IV k = 0, idx;
                 AV *matches = (AV *)SvRV(*lines); /* line_map() value */
-
-                if (min_line == -1)
-                    min_line = i;
-                max_line = i;
 
                 for (idx = av_len(matches); idx >= 0; --idx) {
                     /* We know (via sub line_map) "matches" holds
@@ -222,38 +216,37 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
             }
         }
 
-        if (min_line >= 0) {
-            IV *e, *start, *end;
-            ++max_line;
+        if (ctx->thresh.max >= 0) {
             struct LK *lk;
-            if (ctx->thresh.alloc <= max_line) {
-                    IV *new = malloc(2 * max_line * sizeof *new);
-                    free(ctx->thresh.arr);
-                    ctx->thresh.alloc = 2 * max_line;
-                    ctx->thresh.arr = new;
-            }
-            start = &ctx->thresh.arr[min_line];
-            memset(start, -1, (max_line - min_line) * sizeof *ctx->thresh.arr);
-            end = &ctx->thresh.arr[--max_line];
-
-            for (lk = ctx->links.arr[ctx->thresh.max]; lk; lk = lk->link)
-                ctx->thresh.arr[lk->i] = lk->j;
-
             if (GIMME_V == G_ARRAY) {
-                for (e = start; e <= end; ++e) {
-                    if (*e >= 0) {
-                         AV *arr = newAV();
-                         av_push(arr, newSViv(e - ctx->thresh.arr));
-                         av_push(arr, newSViv(*e));
-                         XPUSHs(sv_2mortal(newRV_noinc((SV *)arr)));
-                    }
+                SV **start, **end;
+                XSprePUSH;
+                start = SP+1;
+                for (lk = ctx->links.arr[ctx->thresh.max]; lk; lk = lk->link) {
+                    AV *arr;
+                    /* only count transitions */
+                    if (lk->link && lk->link->i == lk->i)
+                        continue;
+                    arr = newAV();
+                    av_push(arr, newSViv(lk->i));
+                    av_push(arr, newSViv(lk->j));
+                    XPUSHs(sv_2mortal(newRV_noinc((SV *)arr)));
+                }
+                /* reverse the stack */
+                end = SP;
+                while (start < end) {
+                    SV *tmp = *start;
+                    *start++ = *end;
+                    *end-- = tmp;
                 }
             }
             else {
                 j = 0;
-                for (e = start; e <= end; ++e)
-                    if (*e >= 0)
-                        ++j;
+                for (lk = ctx->links.arr[ctx->thresh.max]; lk; lk = lk->link) {                    
+                    if (lk->link && lk->link->i == lk->i)
+                        continue;
+                    ++j;
+                }
                 XSRETURN_IV(j);
             }
         }

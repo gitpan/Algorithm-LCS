@@ -1,5 +1,8 @@
 Revision history for Perl extension Algorithm::LCS.
 
+1.04  Mon Aug 11 07:33:00 EDT 2003
+        - simplify core loop (faster & more memory-efficient)
+
 1.03  Sun Aug 10 22:40:00 EDT 2003
         - fix link walk/allocation bug in core loop (can't escape O(N*M) 
           allocation algorithm after all).

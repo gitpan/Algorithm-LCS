@@ -3,7 +3,7 @@ package Algorithm::LCS;
 use 5.008;
 use strict;
 use warnings;
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 require XSLoader;
 XSLoader::load('Algorithm::LCS', $VERSION);
