@@ -5,11 +5,13 @@
 #include "ppport.h"
 
 struct LK {
+ struct LK *link;
         IV i;
         IV j;
+ struct LK *next;
 };
 struct LA {
-    struct LK *arr;
+    struct LK **arr;
     IV max;
     IV alloc;
 };
@@ -21,6 +23,8 @@ struct TA {
 struct CTX {
     struct TA thresh;
     struct LA links;
+    struct LA avail;
+    struct LK *current;
 };
 
 inline
@@ -38,11 +42,11 @@ static IV *ta_push(struct TA *a)
 }
 
 inline
-static struct LK *la_push(struct LA *a)
+static struct LK **la_push(struct LA *a)
 {
     a->max++;
     if (a->max == a->alloc) {
-        struct LK *new = malloc(2 * a->alloc * sizeof *new);
+        struct LK **new = malloc(2 * a->alloc * sizeof *new);
         memcpy(new, a->arr, a->max * sizeof *new);
         free(a->arr);
         a->arr = new;
@@ -50,6 +54,36 @@ static struct LK *la_push(struct LA *a)
     }
     return &a->arr[a->max];
 }
+
+
+#define PREP_LINKS(cur,N) do {                          \
+    struct LK *e = (cur), *end = (cur) + ((N)-1);       \
+    while (e < end) {                                   \
+        e->next = e + 1;                                \
+        ++e;                                            \
+   }                                                    \
+   end->next = NULL;                                    \
+} while(0)
+
+
+inline
+static struct LK *make_link(struct CTX *ctx, struct LK *lk, IV i, IV j)
+{
+    struct LK *new = ctx->current;
+    new->link = lk;
+    new->i = i;
+    new->j = j;
+    if (new->next) {
+        ctx->current = new->next;
+        return new;
+    }
+    ctx->current = malloc(100 * sizeof *ctx->current);
+    PREP_LINKS(ctx->current, 100);
+    *la_push(&ctx->avail) = ctx->current;
+    new->next = ctx->current;
+    return new;
+}
+
 
 inline
 static IV lcs_DESTROY(SV *sv) 
@@ -61,6 +95,12 @@ static IV lcs_DESTROY(SV *sv)
             free(ctx->thresh.arr);
         if (ctx->links.alloc)
             free(ctx->links.arr);
+        if (ctx->avail.alloc) {
+            while (ctx->avail.max >= 0)
+                free(ctx->avail.arr[ctx->avail.max--]);
+            free(ctx->avail.arr);
+        }
+
         free(ctx);
         return 1;
 }
@@ -69,6 +109,7 @@ inline
 static SV *lcs_new(char *class)
 {
         struct CTX *ctx = malloc(sizeof *ctx);
+        struct LK *end;
 
         ctx->thresh.arr = malloc(100 * sizeof *ctx->thresh.arr);
         ctx->thresh.alloc = 100;
@@ -77,6 +118,14 @@ static SV *lcs_new(char *class)
         ctx->links.arr = malloc(100 * sizeof *ctx->links.arr);
         ctx->links.alloc = 100;
         ctx->links.max = -1;
+
+        ctx->avail.arr = malloc(100 * sizeof *ctx->links.arr);
+        ctx->avail.alloc = 100;
+        ctx->avail.max = -1;
+
+        ctx->current = malloc(100 * sizeof *ctx->current);
+        PREP_LINKS(ctx->current, 100);
+        *la_push(&ctx->avail) = ctx->current;
 
         return sv_setref_pv(newSV(0),class,ctx);
 }
@@ -129,6 +178,7 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
         min_line = -1;
         max_line = 0;
         ctx->links.max = ctx->thresh.max = -1;
+        ctx->current = *ctx->avail.arr;
 
         for (i = a_min; i <= a_max; ++i) {
             SV *line = *av_fetch(a, i, 0);
@@ -159,7 +209,9 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
                         k = rnlw(&ctx->thresh, j, k);
 
                     if (k >= 0) {
-                        struct LK lk = {i, j};
+                        struct LK *lk = make_link(ctx, (k>0) ? 
+                                                  ctx->links.arr[k-1] :
+                                                  NULL, i, j);
                         if (ctx->links.max < k) {
                             *la_push(&ctx->links) = lk;
                         }
@@ -173,6 +225,7 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
         if (min_line >= 0) {
             IV *e, *start, *end;
             ++max_line;
+            struct LK *lk;
             if (ctx->thresh.alloc <= max_line) {
                     IV *new = malloc(2 * max_line * sizeof *new);
                     free(ctx->thresh.arr);
@@ -182,10 +235,9 @@ void lcs__core_loop(obj, a, a_min, a_max, h)
             start = &ctx->thresh.arr[min_line];
             memset(start, -1, (max_line - min_line) * sizeof *ctx->thresh.arr);
             end = &ctx->thresh.arr[--max_line];
-            do {
-                struct LK *link = &ctx->links.arr[ctx->thresh.max--];
-                ctx->thresh.arr[link->i] = link->j;
-            } while (ctx->thresh.max >= 0);
+
+            for (lk = ctx->links.arr[ctx->thresh.max]; lk; lk = lk->link)
+                ctx->thresh.arr[lk->i] = lk->j;
 
             if (GIMME_V == G_ARRAY) {
                 for (e = start; e <= end; ++e) {
