@@ -1,7 +1,9 @@
-MANIFEST
+Changes
+LCS.pm
+LCS.xs
 Makefile.PL
-Algorithm/LCS.pm
-diff.pl
-cdiff.pl
+MANIFEST
+ppport.h
 README
-t/none.t
+t/1.t
+META.yml                                Module meta-data (added by MakeMaker)

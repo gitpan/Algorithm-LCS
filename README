@@ -1,57 +1,22 @@
+Algorithm/LCS version 1.00
+==========================
 
-This package contains a few parts:
+Algorithm::LCS reimplements Algorithm::Diff's core loop in XS,
+and provides a simple OO interface to it.
 
-diff.pl
-	Implementation of `diff' in Perl that is as simple as possible
-	so that you can see how it works.  The output format is not
-	compatible with regular `diff'.
+INSTALLATION
 
-cdiff.pl
-	Christian Murphy's `diff' that produces real diffs that you
-	can feed to `patch'.
+To install this module type the following:
 
-Algorithm/LCS.pm
-	The module that actually finds the differences.  diff.pl and
-	cdiff.pl) just take the results from Algorithm::LCS and format
-	them nicely.	
+   perl Makefile.PL
+   make
+   make test
+   make install
 
-	A::L is suitable for many other uses.  For example, you could
-	use it for finding the smallest set of differences between two
-	strings, or for computing the most efficient way to update the
-	screen if you were replacing `curses'.
+COPYRIGHT AND LICENCE
 
+Copyright (C) 2003 Joe Schaefer
 
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself. 
 
-OTHER RESOURCES
-
-Visit my diff/LCS web page at http://www.plover.com/~mjd/perl/diff/.
-
-To join a low-volume mailing list for announcements related to diff
-and Algorithm::LCS, send an empty mail message to
-mjd-perl-diff-request@plover.com.
-
-`Longest Common Subsequences', at
-http://www.ics.uci.edu/~eppstein/161/960229.html 
-
-
-
-THANKS SECTION
-
-Thanks to Christian Murphy for writing `cdiff.pl'.  In this world
-	there are the talkers and the doers, and Christian is
-	obviously a doer.  
-
-Thanks to Tim Bunce for his code that I haven't incorporated yet.
-
-Thanks to David Eppstein for his lucid page on dynamic programming and
-	the Longest Common Subsequences problem, which provided 2/3 of
-	the inspiration for this project.
-
-Thanks to the countless folks who showed up in comp.lang.perl.misc
-	every month asking `how can I do `diff' in Perl' for the other
-	1/3 of the inspiration.
-
-
-
-
-	
